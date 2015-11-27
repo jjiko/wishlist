@@ -1,0 +1,33 @@
+{
+  "name": "joejiko/amazon-wishlist-scraper",
+  "type": "library",
+  "description": "Transform amazon wishlist pages into a usable data format.",
+  "keywords": ["amazon", "wishlist"],
+  "homepage": ["https://code.joejiko.com/amazon-wishlist-scraper"],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Justin Scarpetti",
+      "email": "",
+      "homepage":"http://www.justinscarpetti.com/",
+      "role": "Developer"
+    },
+    {
+      "name": "Joe Jiko",
+      "email": "me@joejiko.com",
+      "homepage": "https://www.joejiko.com",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": ">=5.3.0",
+    "vlucas/phpdotenv": "~1.0",
+    "coderockr/php-query": "dev-master"
+  },
+  "autoload": {
+    "psr-0": {
+      "Wishlist":"src"
+    }
+  }
+
+}
