@@ -1,14 +1,15 @@
 <?php namespace Jiko\Amazon;
 
 define('DEFAULT_AMAZON_WISHLIST_ID', env('AMAZON_WISHLIST_ID', 'YOUR_ID_HERE'));
-
-require_once './wishlist/wishlist.php';
-require_once './wishlist/wishlistItem.php';
+define('DEFAULT_AMAZON_AFFILIATE_TAG', env('AMAZON_TRACKING_ID', 'YOUR_AFFILIATE_TAG_HERE'));
+define('DEFAULT_WISHLIST_FILTER', 'unpurchased');
+define('DEFAULT_WISHLIST_SORT', 'date-added');
 
 class Wishlist
 {
   protected $filter;
   protected $id;
+  protected $sort;
   protected $wishlist;
 
   /**
@@ -17,12 +18,17 @@ class Wishlist
    */
   function __construct($params = null)
   {
-    set_time_limit(30);
     $this->set($params);
 
     if (empty($this->filter)) {
-      $this->filter = "unpurchased";
+      $this->filter = DEFAULT_WISHLIST_FILTER;
     }
+
+    if(empty($this->sort)) {
+      $this->sort = DEFAULT_WISHLIST_SORT;
+    }
+
+    $this->get();
   }
 
   /**
@@ -30,20 +36,6 @@ class Wishlist
    */
   protected function toJson() {
     return $this->wishlist->toJSON();
-  }
-
-  /**
-   * @return mixed
-   */
-  protected function toXml() {
-    return $this->wishlist->toXML();
-  }
-
-  /**
-   * @return mixed
-   */
-  protected function toRss() {
-    return $this->wishlist->toRSS();
   }
 
   /**
@@ -57,20 +49,27 @@ class Wishlist
    * @return mixed
    */
   protected function toObject() {
-    return $this->wishlist->data;
+    return $this->wishlist->items;
   }
 
   /**
    * @param string $format
    * @return mixed
    */
-  public function out($format="json") {
-    if(method_exists($this, "to".ucfirst($format))) {
-      $this->out{ucfirst($format)}();
+  public function out($format=null) {
+    if(!empty($format)) {
+      $method = "to".ucfirst(strtolower($format));
+      if(method_exists($this, $method)) {
+        return $this->$method();
+      }
     }
 
-    // default to object
-    return $this->wishlist;
+    return (object) [
+      'id' => $this->id,
+      'reveal' => $this->filter,
+      'sort' => $this->sort,
+      'items' => $this->wishlist->all()
+    ];
   }
 
   function __destruct() {}
@@ -85,7 +84,7 @@ class Wishlist
         $this->id = $params;
       } else {
         foreach ($params as $key => $param) {
-          $this[$key] = $param;
+          $this->{$key} = $param;
         }
       }
     }
@@ -96,6 +95,11 @@ class Wishlist
    */
   public function get()
   {
-    $this->wishlist = new Wishlist();
+    $params = (object) [
+      'id' => $this->id,
+      'reveal' => $this->filter,
+      'sort' => $this->sort
+    ];
+    $this->wishlist = new Wishlist\Collection($params);
   }
 }

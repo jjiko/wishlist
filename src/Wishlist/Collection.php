@@ -1,16 +1,26 @@
-<?php Jiko\Amazon\Wishlist;
+<?php
+
+namespace Jiko\Amazon\Wishlist;
+
+// @todo find a namespaced phpQuery.. meh
+use phpQuery;
 
 class Collection
 {
   static $base_url = "http://www.amazon.com";
 
   protected $items = [];
+  protected $errors = [];
 
-  public function __construct($wid, $reveal, $sort)
+  /**
+   * Collection constructor.
+   * @param $params
+   */
+  function __construct($params)
   {
     $this->url = vsprintf(
       "%s/registry/wishlist/%s?reveal=%s&sort=%s&layout=standard",
-      [static::$base_url, $wid, $reveal, $sort]
+      [static::$base_url, $params->id, $params->reveal, $params->sort]
     );
 
     try {
@@ -18,19 +28,47 @@ class Collection
         throw new Exception("Could not read wishlist from url: {$this->url}");
       }
     } catch (Exception $e) {
-      // $e->getMessage();
+      $this->errors[] = $e;
     }
 
     $this->parseContent();
 
   }
 
-  public function getContent($page = 1)
+  /**
+   * @note watch the CURLOPT_CONNECTTIMEOUT on a shared host.
+   *       Especially helpful if your server is shit or Amazon is down (god forbid)
+   * @param $url
+   * @return string
+   */
+  protected static function getContentFromURL($url)
   {
-    $this->content = phpQuery::newDocumentFile($this->url . "&page=$page");
+    $curl = curl_init();
+    curl_setopt_array($curl, array
+    (
+      CURLOPT_URL => $url,
+      CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1',
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_CONNECTTIMEOUT => 30,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HEADER => false
+    ));
+
+    $data = curl_exec($curl);
+    curl_close($curl);
+
+    return $data;
   }
 
-  public function parseV1Content()
+  protected function getContent($page = 1)
+  {
+    return phpQuery::newDocument(static::getContentFromURL($this->url . "&page=$page"));
+  }
+
+  /**
+   * Untested.. good luck :)
+   */
+  protected function parseV1Content()
   {
     $pages = count(pq('.pagDiv .pagPage'));
     $items = pq('tbody.itemWrapper');
@@ -60,7 +98,7 @@ class Collection
     }
   }
 
-  public function parseV2Content()
+  protected function parseV2Content()
   {
     $pages = count(pq('#wishlistPagination li[data-action="pag-trigger"]'));
     if (empty($pages)) $pages = 1;
@@ -70,12 +108,10 @@ class Collection
       if (!($content = $this->getContent($pi))) {
         throw new Exception("Could not read wishlist from url: {$this->url}");
       }
-
       $items = pq('.g-items-section div[id^="item_"]');
 
       //loop through items
       foreach ($items as $i => $item) {
-
         $name = htmlentities(trim(pq($item)->find('a[id^="itemName_"]')->html()));
         $link = pq($item)->find('a[id^="itemName_"]')->attr('href');
 
@@ -85,31 +121,41 @@ class Collection
           $total_ratings = trim(str_replace(array('(', ')'), '', $total_ratings));
           $total_ratings = is_numeric($total_ratings) ? $total_ratings : '';
 
-          $current_item = new WishlistItem([
+          $current_item = new Item([
             'name' => $name,
             'link' => static::$base_url . $link,
-            'newPrice' => trim(pq($item)->find('span[id^="itemPrice_"]')->html()),
-            'dateAdded' => trim(str_replace('Added', '', pq($item)->find('div[id^="itemAction_"] .a-size-small')->html())),
+            'price' => trim(pq($item)->find('span[id^="itemPrice_"]')->html()),
+            'created_at' => trim(str_replace('Added', '', pq($item)->find('div[id^="itemAction_"] .a-size-small')->html())),
             'priority' => trim(pq($item)->find('span[id^="itemPriorityLabel_"]')->html()),
-            'totalRatings' => $total_ratings,
+            'ratings' => $total_ratings,
             'comment' => trim((pq($item)->find('span[id^="itemComment_"]')->html())),
             'picture' => pq($item)->find('div[id^="itemImage_"] img')->attr('src'),
             'page' => $pi
           ]);
           $current_item->set([
-            'ASIN' => static::getASIN($this->link),
+            'ASIN' => static::getASIN($current_item->link),
             'lgSecureImage' => static::getLgSecureImage($current_item->picture)
           ]);
           $current_item->set([
             'affiliateLink' => static::getAffiliateLink($current_item->ASIN)
           ]);
         }
+        $this->items[] = $current_item;
       }
     }
   }
 
-  public function parseContent()
+  /**
+   * Pass to the correct DOM selectors
+   *
+   * @return string|void
+   */
+  protected function parseContent()
   {
+    if (!empty($this->errors)) {
+      return $this->getErrors();
+    }
+
     try {
       $items = pq('tbody.itemWrapper');
       if ($items->html()) {
@@ -117,10 +163,16 @@ class Collection
       }
       return $this->parseV2Content();
     } catch (Exception $e) {
-      // $e->getMessage();
+      $this->errors[] = $e;
     }
   }
 
+  /**
+   * Used in creating product and affiliate links
+   *
+   * @param $url
+   * @return mixed|string
+   */
   protected function getASIN($url)
   {
     $ASIN = str_replace(static::$base_url . "/dp/", '', $url);
@@ -128,10 +180,58 @@ class Collection
     return $ASIN;
   }
 
-  function getLgSecureImage($image_url)
+  /**
+   * @param $image_url
+   * @return string
+   */
+  protected function getLgSecureImage($image_url)
   {
     $largeSSLImage = str_replace("http://ecx.images-amazon.com", 'https://images-eu.ssl-images-amazon.com', $image_url);
     $largeSSLImage = str_replace("_.jpg", '0_.jpg', $largeSSLImage);
     return $largeSSLImage;
+  }
+
+  /**
+   * @param $ASIN
+   * @return string
+   */
+  protected function getAffiliateLink($ASIN)
+  {
+    $affiliateURL = vsprintf(
+      "%s/dp/%s/ref=nosim?tag=%s",
+      [static::$base_url, $ASIN, DEFAULT_AMAZON_AFFILIATE_TAG]
+    );
+    return $affiliateURL;
+  }
+
+  /**
+   * @return array|string
+   */
+  public function toJSON()
+  {
+    if (!empty($this->errors)) {
+      return $this->errors;
+    }
+    return json_encode($this->items);
+  }
+
+  /**
+   * @return string
+   */
+  protected function getErrors()
+  {
+    $response = (object)['errors' => []];
+    foreach ($this->errors as $e) {
+      $response->errors[] = $e->getMessage();
+    }
+    return json_encode($response);
+  }
+
+  /**
+   * @return array of wishlist items
+   */
+  public function all()
+  {
+    return $this->items;
   }
 }
