@@ -4,8 +4,8 @@ Amazon Wishlist Scraper
 
 ## Installation ##
 
-    "require-dev": {
-      "jjiko/amazon-wishlist": "dev-master"
+    "require": {
+      "jjiko/amazon-wishlist-scraper": "~3.0"
     }
 
     composer update
@@ -17,6 +17,10 @@ Amazon Wishlist Scraper
     ]);
     header('Content-Type: application/json');
     echo $wishlist->out('json');
+
+## Config ##
+* Using https://github.com/vlucas/phpdotenv .. see .env.example. 
+* The .env file should exist in your project's root directory.. probably ../vendor
 
 ## Options ##
 
