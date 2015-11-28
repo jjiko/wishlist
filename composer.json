@@ -1,5 +1,5 @@
 {
-  "name": "joejiko/amazon-wishlist-scraper",
+  "name": "jiko/amazon-wishlist-scraper",
   "description": "Transform amazon wishlist pages into a usable data format.",
   "keywords": ["amazon", "wishlist"],
   "homepage": ["https://code.joejiko.com/amazon-wishlist-scraper"],
