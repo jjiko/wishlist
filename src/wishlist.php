@@ -1,4 +1,4 @@
-<?php namespace Jiko\Amazon;
+<?php namespace Jiko\Wishlist;
 
 define('DEFAULT_AMAZON_WISHLIST_ID', env('AMAZON_WISHLIST_ID', 'YOUR_ID_HERE'));
 define('DEFAULT_AMAZON_AFFILIATE_TAG', env('AMAZON_TRACKING_ID', 'YOUR_AFFILIATE_TAG_HERE'));
@@ -8,9 +8,10 @@ define('DEFAULT_WISHLIST_SORT', 'date-added');
 class Wishlist
 {
   protected $filter;
-  protected $id;
   protected $sort;
   protected $wishlist;
+
+  public $id;
 
   /**
    * Wishlist constructor.
@@ -100,6 +101,6 @@ class Wishlist
       'reveal' => $this->filter,
       'sort' => $this->sort
     ];
-    $this->wishlist = new Wishlist\Collection($params);
+    $this->wishlist = new Collection($params);
   }
 }

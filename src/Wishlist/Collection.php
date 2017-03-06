@@ -1,6 +1,6 @@
 <?php
 
-namespace Jiko\Amazon\Wishlist;
+namespace Jiko\Wishlist;
 
 // @todo find a namespaced phpQuery.. meh
 use phpQuery;
@@ -116,18 +116,27 @@ class Collection
         $link = pq($item)->find('a[id^="itemName_"]')->attr('href');
 
         if (!empty($name) && !empty($link)) {
+          $itemInfo = pq($item)->find('div[id^="itemInfo_"]')->html();
+          // (2,566)
+          if(preg_match('/\(([\d,]+)\)/', $itemInfo, $matches)) {
+            $rating_count = $matches[1];
+          }
 
-          $total_ratings = pq($item)->find('div[id^="itemInfo_"] div:a-spacing-small:first a.a-link-normal:last')->html();
-          $total_ratings = trim(str_replace(array('(', ')'), '', $total_ratings));
-          $total_ratings = is_numeric($total_ratings) ? $total_ratings : '';
+          //  4.6 out of 5
+          if(preg_match('/([\d]+[\.]?[^\s]+) out of/', $itemInfo, $matches)) {
+            $rating_value = $matches[1];
+          }
+
+          $priority = trim(pq($item)->find('span[id^="itemPriorityLabel_"]')->html());
 
           $current_item = new Item([
             'name' => $name,
             'link' => static::$base_url . $link,
             'price' => trim(pq($item)->find('span[id^="itemPrice_"]')->html()),
             'created_at' => trim(str_replace('Added', '', pq($item)->find('div[id^="itemAction_"] .a-size-small')->html())),
-            'priority' => trim(pq($item)->find('span[id^="itemPriorityLabel_"]')->html()),
-            'ratings' => $total_ratings,
+            'priority' => empty($priority) ? "Medium" : $priority,
+            'ratingValue' => $rating_value,
+            'ratingCount' => $rating_count,
             'comment' => trim((pq($item)->find('span[id^="itemComment_"]')->html())),
             'picture' => pq($item)->find('div[id^="itemImage_"] img')->attr('src'),
             'page' => $pi
@@ -186,7 +195,7 @@ class Collection
    */
   protected function getLgSecureImage($image_url)
   {
-    $largeSSLImage = str_replace("http://ecx.images-amazon.com", 'https://images-eu.ssl-images-amazon.com', $image_url);
+    $largeSSLImage = str_replace("http://ecx.images-amazon.com", 'https://images-na.ssl-images-amazon.com', $image_url);
     $largeSSLImage = str_replace("_.jpg", '0_.jpg', $largeSSLImage);
     return $largeSSLImage;
   }
@@ -233,5 +242,13 @@ class Collection
   public function all()
   {
     return $this->items;
+  }
+
+  public function meta()
+  {
+    return new stdClass([
+      'id' => $this->id,
+      'link' => vsprintf("%s/registry/wishlist/%s", [static::$base_url, $this->id])
+    ]);
   }
 }

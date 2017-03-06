@@ -1,5 +1,5 @@
 <?php
 
-namespace Jiko\Amazon\Wishlist;
+namespace Jiko\Wishlist;
 
 class Exception extends \Exception {}

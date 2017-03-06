@@ -1,6 +1,6 @@
 <?php
 
-namespace Jiko\Amazon\Wishlist;
+namespace Jiko\Wishlist;
 
 class Item
 {
@@ -9,7 +9,8 @@ class Item
   public $price;
   public $created_at;
   public $priority;
-  public $ratings;
+  public $ratingCount;
+  public $ratingValue;
   public $comment;
   public $picture;
   public $page;
