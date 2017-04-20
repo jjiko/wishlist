@@ -3,7 +3,6 @@
 namespace Jiko\Wishlist;
 
 use Illuminate\Database\Eloquent\Model;
-use Jiko\Api\CacheableApiTrait;
 
 class EloquentWishlist extends Model {
   function __construct(array $attributes = []) {
