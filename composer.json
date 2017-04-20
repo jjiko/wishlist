@@ -22,7 +22,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Jiko\\Amazon\\":"src"
+      "Jiko\\Wishlist\\":"src"
     }
   }
 
