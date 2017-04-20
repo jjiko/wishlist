@@ -135,8 +135,8 @@ class Collection
             'price' => trim(pq($item)->find('span[id^="itemPrice_"]')->html()),
             'created_at' => trim(str_replace('Added', '', pq($item)->find('div[id^="itemAction_"] .a-size-small')->html())),
             'priority' => empty($priority) ? "Medium" : $priority,
-            'ratingValue' => $rating_value,
-            'ratingCount' => $rating_count,
+            'ratingValue' => '',
+            'ratingCount' => '',
             'comment' => trim((pq($item)->find('span[id^="itemComment_"]')->html())),
             'picture' => pq($item)->find('div[id^="itemImage_"] img')->attr('src'),
             'page' => $pi

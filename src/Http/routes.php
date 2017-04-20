@@ -1,2 +1,2 @@
 <?php
-Route::get('wishlist', ['as' => 'wishlist', 'uses' => 'WishlistPageController@index']);
+Route::name('wishlist')->get('wishlist', 'Jiko\Wishlist\Http\Controllers\WishlistPageController@index');
